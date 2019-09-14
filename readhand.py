@@ -36,16 +36,19 @@ def init(data):
     data.position = 0
     data.isReady = False
     data.carX, data.carY = data.width/2, data.height/2
+    
+    
     data.binary = None
+    data.box = None
+    data.object_color = data.frame[105:175, 505:575]
     
 def mouseMotion(event, data):
     data.cursorX, data.cursorY = event.x, event.y
 
         
 def keyPressed(event, data):
-    if event.keysym == "r":
-        data.isReady = True
-        print(data.isReady)
+    if event.keysym == "a":
+       data.object_color = data.box
         
 def timerFired(data):
     if data.isSelectedCar == "red":
@@ -96,11 +99,18 @@ def drawRectOnHand(data):
     color=(0, 255, 0);
     thickness = 2;
     
-    box = data.frame[105:175, 505:575]
-    object_color = box
-    object_color_hsv = cv2.cvtColor(object_color, cv2.COLOR_BGR2HSV)
+    cv2.rectangle(data.frame, (500, 100), (580, 180), (105, 105, 105), 2)
+    data.box = data.frame[105:175, 505:575]
+    # data.object_color = data.box
+    # if key == 97:
+    #     data.object_color = data.box
+    #     print("A")
+    #     # cv2.destroyAllWindows()
+        
+    object_color_hsv = cv2.cvtColor(data.object_color, cv2.COLOR_BGR2HSV)
     object_hist = cv2.calcHist([object_color_hsv], [0, 1], None,
                                [12, 15], [0, 180, 0, 256])
+    cv2.normalize(object_hist, object_hist, 0, 255, cv2.NORM_MINMAX)
     hsv_frame = cv2.cvtColor(data.frame, cv2.COLOR_BGR2HSV)
     object_segment = cv2.calcBackProject(
         [hsv_frame], [0, 1], object_hist, [0, 180, 0, 256], 1)
@@ -109,6 +119,7 @@ def drawRectOnHand(data):
     cv2.filter2D(object_segment, -1, disc, object_segment)
     _, segment_thresh = cv2.threshold(
         object_segment, 70, 255, cv2.THRESH_BINARY)
+        
         
     kernel = None
     eroded = cv2.erode(segment_thresh, kernel, iterations=2)
@@ -124,11 +135,9 @@ def drawRectOnHand(data):
     if flag is not None and palm_area > min_area:
         cnt = cnt[flag]
         # cpy = data.frame.copy()
-        cv2.drawContours(data.frame, [cnt], -2, color, thickness)
-        print("hi")
+        cv2.drawContours(data.frame, [cnt], 0, color, thickness)
         return data.frame
     else:
-        print("no")
         return data.frame
         
     # for i in range(len(cnt)):
@@ -163,7 +172,7 @@ def redrawAll(canvas, data):
 # use the run function as-is
 ####################################
 
-def run(width=300, height=300):
+def run(width=500, height=500):
     def redrawAllWrapper(canvas, data):
         canvas.delete(ALL)
         canvas.create_rectangle(0, 0, data.width, data.height,
@@ -199,6 +208,8 @@ def run(width=300, height=300):
     camera = cv2.VideoCapture(data.cameraIndex)
     data.camera = camera
     data.timerDelay = 1 # milliseconds
+    _, data.frame = data.camera.read()
+    data.frame = cv2.flip(data.frame,1)
     init(data)
     # create the root and the canvas
     root = Tk()
