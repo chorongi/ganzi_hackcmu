@@ -15,28 +15,6 @@ sys.setrecursionlimit(10000)
 
 
 def init(data):
-    data.isGameStart = False
-    data.isHelp = False
-    data.helpX = data.width*1/13
-    data.helpY = data.height*1/13
-    data.carWidth = 25
-    data.carHeight = 50
-    data.cursorX = 0
-    data.cursorY = 0
-    data.helpFont = None
-    data.helpColor = "white"
-    data.backX = data.width*1/13
-    data.backY = data.height*1/13
-    data.backFont = None
-    data.nameFont = None
-    data.nameColor = None
-    data.lineColor = "beige"
-    data.isSelectedCar = None
-    data.useMotion = True
-    data.position = 0
-    data.isReady = False
-    data.carX, data.carY = data.width/2, data.height/2
-    
     
     data.binary = None
     data.box = None
@@ -51,30 +29,15 @@ def mouseMotion(event, data):
 def keyPressed(event, data):
     if event.keysym == "a":
        data.object_color = data.box
+    elif event.keysym == "s":
+       print(data.com)
         
 def timerFired(data):
-    if data.isSelectedCar == "red":
-        data.useMotion = False
-        if data.redCarY < data.height and data.position==0:
-            data.redCarY += 5
-        elif data.redCarY > -300:
-            data.position = 1
-            data.redCarY-= 12
-        else: data.isGameStart = True
+    return None
 
 
 def cursorPositionStart(canvas, data):
     return None
-    
-
-    
-    
-def cursorPostitionHelp(canvas, data):
-    if(data.cursorX > data.backX-30 and data.cursorX < data.backX+30 and
-        data.cursorY > data.backY-10 and data.cursorY < data.backY+20):
-        data.backFont = "Helvetica 24 bold"
-    else:
-        data.backFont = "Helvetica 18 bold underline"
 
 
 def opencvToTk(frame):
@@ -84,16 +47,6 @@ def opencvToTk(frame):
     tk_image = ImageTk.PhotoImage(image=pil_img)
     return tk_image
 
-def cameraFired(data):
-    """Called whenever new camera frames are available.
-
-    Camera frame is available in data.frame. You could, for example, blur the
-    image, and then store that back in data. Then, in drawCamera, draw the
-    blurred frame (or choose not to).
-    """
-    
-    # For example, you can blur the image.
-    #data.frame = cv2.GaussianBlur(data.frame, (11, 11), 0)
     
 def get_center_of_mass(data):
         if len(data.cnt) == 0:
@@ -103,7 +56,7 @@ def get_center_of_mass(data):
         cY = int(M["m01"] / M["m00"])
         return (cX, cY)
         
-def drawRectOnHand(data):
+def detectHand(data):
     palm_area = 0;
     min_area = 10000;
     color=(0, 255, 0);
@@ -111,11 +64,6 @@ def drawRectOnHand(data):
     
     cv2.rectangle(data.frame, (500, 100), (580, 180), (105, 105, 105), 2)
     data.box = data.frame[105:175, 505:575]
-    # data.object_color = data.box
-    # if key == 97:
-    #     data.object_color = data.box
-    #     print("A")
-    #     # cv2.destroyAllWindows()
         
     object_color_hsv = cv2.cvtColor(data.object_color, cv2.COLOR_BGR2HSV)
     object_hist = cv2.calcHist([object_color_hsv], [0, 1], None,
@@ -142,6 +90,7 @@ def drawRectOnHand(data):
             if area > palm_area:
                 palm_area = area
                 flag = i
+                
     if flag is not None and palm_area > min_area:
         data.cnt = data.cnt[flag]
         # cpy = data.frame.copy()
@@ -151,35 +100,33 @@ def drawRectOnHand(data):
         return data.frame
     else:
         return data.frame
-    # for i in range(len(cnt)):
-    #     x,y,w,h=cv2.boundingRect(cnt[i])
-    #     if w > 100 and h > 100:
-    #         cv2.rectangle(data.frame,(x,y),(x+w,y+h),(255,0,255), 2)
                 
 
-        
+def detectFace(data, block=False, colour=(0, 0, 0)):
+    fill = [1, -1][block]
+    face_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+    area = 0
+    X = Y = W = H = 0
+    for (x, y, w, h) in faces:
+        if w * h > area:
+            area = w * h
+            X, Y, W, H = x, y, w, h
+    cv2.rectangle(data.frame, (X, Y), (X + W, Y + H), colour, fill)
+
 def drawCamera(canvas, data):
     _, data.frame = data.camera.read()
     data.frame = cv2.flip(data.frame,1)
-    cameraFired(data)
-    drawRectOnHand(data)
+    detectHand(data)
+    detectFace(data, block=True)
     data.tk_image = opencvToTk(data.frame)
     canvas.create_image(data.width/2, data.height/2, image=data.tk_image)
 
-
 def redrawAll(canvas, data):
-    # draw in canvas
-    # if data.isGameStart == False and data.isHelp == False:
-    #     cursorPositionStart(canvas, data)
-    #     drawStartScreen(canvas, data)
-    # elif data.isGameStart == False and data.isHelp == True:
-    #     cursorPostitionHelp(canvas, data)
-    #     drawHelpScreen(canvas, data)
-    # elif data.isGameStart == True and data.isReady == False:
     drawCamera(canvas, data)
-    # elif data.isReady == True:
-    #     moveCar(data)
-    #     drawCar(canvas, data)
 
 ####################################
 # use the run function as-is
