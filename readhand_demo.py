@@ -51,7 +51,41 @@ def keyPressed(event, data):
        print(data.com)
         
 def timerFired(data):
-    return None
+    data.count += 1
+    if(data.action_count == 2):
+        term = 50
+        if(data.count - term > data.demo_seconds[data.action_count - 1]*30):
+            action = data.action_list[data.action_count]
+            (new_cx, new_cy) = data.com
+            (old_cx, old_cy) = data.old_com
+            num_fingers = 2
+            data.prev_window = execute_action(action, new_cx, new_cy, data.prev_window)
+            data.old_com = (new_cx, new_cy)
+            if(data.count == data.demo_seconds[data.action_count]*30 - 1):
+                data.action_count += 1
+    elif(data.action_count == 3):
+        term = 50
+        if((data.count - term > data.demo_seconds[data.action_count - 1]*30) and
+            data.count + term < data.demo_seconds[data.action_count]*30):
+            action = data.action_list[data.action_count]
+            (new_cx, new_cy) = data.com
+            (old_cx, old_cy) = data.old_com
+            num_fingers = 2
+            data.prev_window = execute_action(action, new_cx, new_cy, data.prev_window)
+            data.old_com = (new_cx, new_cy)
+        elif(data.count == data.demo_seconds[data.action_count]*30):
+            data.action_count += 1
+            
+    elif(data.action_count < len(data.demo_seconds) and data.count == data.demo_seconds[data.action_count]*30):
+        (new_cx, new_cy) = data.com
+        (old_cx, old_cy) = data.old_com
+        num_fingers = 2
+        action = data.action_list[data.action_count]
+        # action = get_action_num(old_cx, old_cy, new_cx, new_cy, data.width,data.height, num_fingers)
+        print(action)
+        data.prev_window = execute_action(action, new_cx, new_cy, data.prev_window)
+        data.old_com = (new_cx, new_cy)
+        data.action_count += 1
 
 
 def cursorPositionStart(canvas, data):
@@ -65,7 +99,7 @@ def opencvToTk(frame):
     tk_image = ImageTk.PhotoImage(image=pil_img)
     return tk_image
 
-    
+
 def get_center_of_mass(data):
     if len(data.cnt) == 0:
         return None
@@ -74,7 +108,7 @@ def get_center_of_mass(data):
     cY = int(M["m01"] / M["m00"])
     data.com = (cX, cY)
     cv2.circle(data.frame, data.com, 10, (255, 0, 0), -1)
-        
+
 def detectHand(data):
     palm_area = 0;
     min_area = 10000;
@@ -219,19 +253,7 @@ def run(width=500, height=500):
     def timerFiredWrapper(canvas, data):
         timerFired(data)
         redrawAllWrapper(canvas, data)
-        data.count += 1
-        if(data.count == data.demo_seconds[data.action_count]*50):
-            print(data.demo_seconds[data.action_count])
-            action = []
-            (new_cx, new_cy) = data.com
-            (old_cx, old_cy) = data.old_com
-            num_fingers = 2
-            action = data.action_list[data.action_count]
-            # action = get_action_num(old_cx, old_cy, new_cx, new_cy, data.width,data.height, num_fingers)
-            print(action)
-            data.prev_window = execute_action(action, new_cx, new_cy, data.prev_window)
-            data.old_com = (new_cx, new_cy)
-            data.action_count += 1
+
         # pause, then call timerFired again
         canvas.after(data.timerDelay, timerFiredWrapper, canvas, data)
         
@@ -248,8 +270,8 @@ def run(width=500, height=500):
     data.cameraIndex = 0
     camera = cv2.VideoCapture(data.cameraIndex)
     data.camera = camera
-    data.demo_seconds = [10, 15, 20, 25, 30, 35, 40, 45]
-    data.action_list = [5, 8, 4, 7, 6, 2, 9, 1]
+    data.demo_seconds = [7, 15, 25, 35, 37, 42, 47, 5]
+    data.action_list = [4, 7, 8, 6, 5, 2, 9, 1]
     data.action_count = 0
 
     data.timerDelay = 1 # milliseconds

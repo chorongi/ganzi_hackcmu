@@ -18,7 +18,7 @@ def get_action_num(old_cx, old_cy, new_cx, new_cy, width, height, num_fingers):
 	area_threshold = 5000
 
 	if(num_fingers < 2):
-		action = (MOVE_FINGER, new_cx, new_cy)
+		action = MOVE_FINGER
 	else:
 		if(abs(new_cx - old_cx) > hori_tol):
 			if(new_cx > old_cx):
@@ -83,16 +83,20 @@ def execute_action(action_num, center_x, center_y, prev_window):
 	elif(action_num == MAXIMIZE):
 		curr_window.maximize()
 	elif(action_num == MOVE):
-		curr_window.moveTo(center_x, center_y)
+		x_ratio = center_x / width * 1.5
+		y_ratio = center_y / height * 1.5
+		curr_window.moveTo(round(x_ratio * screen_width - width*2), round(y_ratio * screen_height - height*2.5))
 	elif(action_num == RESTORE):
 		prev_window.restore()
 	elif(action_num == RESIZE):
 		ratio = center_x / width
-		new_w = round(screen_width * ratio)
-		new_h = round(screen_height * ratio)
+		curr_h = curr_window.height
+		curr_w = curr_window.width
+		new_w = round(min(screen_width * ratio, curr_w * (ratio+ 0.5)))
+		new_h = round(min(screen_height * ratio, curr_h * (ratio + 0.5)))
 		curr_window.resizeTo(new_w, new_h)
 	elif(action_num ==  MINIMIZE_ALL):
-		for window in winndow_list:
+		for window in window_list:
 			window.minimize()
 	else:
 		pass
