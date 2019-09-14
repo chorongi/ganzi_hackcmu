@@ -41,6 +41,8 @@ def init(data):
     data.binary = None
     data.box = None
     data.object_color = data.frame[105:175, 505:575]
+    data.cnt = None
+    data.com = 0
     
 def mouseMotion(event, data):
     data.cursorX, data.cursorY = event.x, event.y
@@ -92,7 +94,15 @@ def cameraFired(data):
     
     # For example, you can blur the image.
     #data.frame = cv2.GaussianBlur(data.frame, (11, 11), 0)
-
+    
+def get_center_of_mass(data):
+        if len(data.cnt) == 0:
+            return None
+        M = cv2.moments(data.cnt)
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+        return (cX, cY)
+        
 def drawRectOnHand(data):
     palm_area = 0;
     min_area = 10000;
@@ -125,26 +135,29 @@ def drawRectOnHand(data):
     eroded = cv2.erode(segment_thresh, kernel, iterations=2)
     dilated = cv2.dilate(eroded, kernel, iterations=2)
     binary = cv2.morphologyEx(dilated, cv2.MORPH_CLOSE, kernel)
-    _,cnt,_ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    _,data.cnt,_ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
-    for (i, c) in enumerate(cnt):
+    for (i, c) in enumerate(data.cnt):
             area = cv2.contourArea(c)
             if area > palm_area:
                 palm_area = area
                 flag = i
     if flag is not None and palm_area > min_area:
-        cnt = cnt[flag]
+        data.cnt = data.cnt[flag]
         # cpy = data.frame.copy()
-        cv2.drawContours(data.frame, [cnt], 0, color, thickness)
+        cv2.drawContours(data.frame, [data.cnt], 0, color, thickness)
+        data.com = get_center_of_mass(data)
+        cv2.circle(data.frame, data.com, 10, (255, 0, 0), -1)
         return data.frame
     else:
         return data.frame
-        
     # for i in range(len(cnt)):
     #     x,y,w,h=cv2.boundingRect(cnt[i])
     #     if w > 100 and h > 100:
     #         cv2.rectangle(data.frame,(x,y),(x+w,y+h),(255,0,255), 2)
                 
+
+        
 def drawCamera(canvas, data):
     _, data.frame = data.camera.read()
     data.frame = cv2.flip(data.frame,1)
