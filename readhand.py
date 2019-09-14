@@ -24,10 +24,17 @@ def init(data):
     data.box = None
     data.object_color = data.frame[105:175, 505:575]
     data.cnt = None
+<<<<<<< HEAD
     data.com = (0,0)
     data.prev_window = pgw.getActiveWindow()
     data.count = 0
     data.old_com = (0,0)
+=======
+    data.com = 0
+    data.palmAreaCpy = 0;
+    data.yLimit = 0;
+    data.numFinger = 0;
+>>>>>>> 13a73e4b6b271a911d2b02d6687d31dda738fcb1
     
 def mouseMotion(event, data):
     data.cursorX, data.cursorY = event.x, event.y
@@ -56,12 +63,13 @@ def opencvToTk(frame):
 
     
 def get_center_of_mass(data):
-        if len(data.cnt) == 0:
-            return None
-        M = cv2.moments(data.cnt)
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
-        return (cX, cY)
+    if len(data.cnt) == 0:
+        return None
+    M = cv2.moments(data.cnt)
+    cX = int(M["m10"] / M["m00"])
+    cY = int(M["m01"] / M["m00"])
+    data.com = (cX, cY)
+    cv2.circle(data.frame, data.com, 10, (255, 0, 0), -1)
         
 def detectHand(data):
     palm_area = 0;
@@ -76,37 +84,39 @@ def detectHand(data):
     object_hist = cv2.calcHist([object_color_hsv], [0, 1], None,
                                [12, 15], [0, 180, 0, 256])
     cv2.normalize(object_hist, object_hist, 0, 255, cv2.NORM_MINMAX)
+    
     hsv_frame = cv2.cvtColor(data.frame, cv2.COLOR_BGR2HSV)
     object_segment = cv2.calcBackProject(
         [hsv_frame], [0, 1], object_hist, [0, 180, 0, 256], 1)
-
     disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
     cv2.filter2D(object_segment, -1, disc, object_segment)
     _, segment_thresh = cv2.threshold(
         object_segment, 70, 255, cv2.THRESH_BINARY)
-        
-        
     kernel = None
     eroded = cv2.erode(segment_thresh, kernel, iterations=2)
     dilated = cv2.dilate(eroded, kernel, iterations=2)
     binary = cv2.morphologyEx(dilated, cv2.MORPH_CLOSE, kernel)
+    masked = cv2.bitwise_and(data.frame, data.frame, mask=binary)
+
+
     data.cnt,_ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
     for (i, c) in enumerate(data.cnt):
             area = cv2.contourArea(c)
             if area > palm_area:
                 palm_area = area
+                data.palmAreaCpy = palm_area
                 flag = i
                 
     if flag is not None and palm_area > min_area:
         data.cnt = data.cnt[flag]
-        # cpy = data.frame.copy()
         cv2.drawContours(data.frame, [data.cnt], 0, color, thickness)
-        data.com = get_center_of_mass(data)
-        cv2.circle(data.frame, data.com, 10, (255, 0, 0), -1)
-        return data.frame
-    else:
-        return data.frame
+        # cv2.drawContours(data.frame, data.cnt, 0, color, thickness)
+        # data.com = get_center_of_mass(data)
+    
+    #     return data.frame
+    # else:
+    #     return data.frame
                 
 
 def detectFace(data, block=False, colour=(0, 0, 0)):
@@ -121,12 +131,62 @@ def detectFace(data, block=False, colour=(0, 0, 0)):
             area = w * h
             X, Y, W, H = x, y, w, h
     cv2.rectangle(data.frame, (X, Y), (X + W, Y + H), colour, fill)
+    
+def dist(data, a, b):
+    return math.sqrt((a[0] - b[0])**2 + (b[1] - a[1])**2)
+    
+def filter_points(data, points, filter_value):
+    for i in range(len(points)):
+        for j in range(i + 1, len(points)):
+            if points[i] and points[j] and dist(data, points[i], points[j]) < filter_value:
+                points[j] = None
+    filtered = []
+    for point in points:
+        if point is not None:
+            filtered.append(point)
+    return filtered
+    
+def detectFingertips(data, filter_value=50):
+   
+    numFinger = 0;
+    if len(data.cnt) == 0:
+        return data.cnt
+    points = []
+    hull = cv2.convexHull(data.cnt, returnPoints=False)
+    defects = cv2.convexityDefects(data.cnt, hull)
+    for i in range(defects.shape[0]):
+        s, e, f, d = defects[i, 0]
+        end = tuple(data.cnt[e][0])
+        points.append(end)
+    filtered = filter_points(data, points, filter_value)
 
+    filtered.sort(key=lambda point: point[1])
+    fingertips = [pt for idx, pt in zip(range(5), filtered)]
+    for fingertip in fingertips:
+        cv2.circle(data.frame, fingertip, 5, (0, 0, 255), -1)
+        x,y = fingertip
+        if(y<data.yLimit):
+            numFinger += 1
+            data.numFinger = numFinger
+    print(numFinger)
+            
+        
+def countFinger(canvas,data):
+    length = math.sqrt(data.palmAreaCpy)/2
+    cx,cy = data.com
+    data.yLimit = cy-length + 30
+    
+    
+    
 def drawCamera(canvas, data):
     _, data.frame = data.camera.read()
     data.frame = cv2.flip(data.frame,1)
     detectHand(data)
-    #detectFace(data, block=True)
+    # detectFace(data, block=True)
+    detectFingertips(data, 40)
+    get_center_of_mass(data)
+    countFinger(canvas,data)
+    
     data.tk_image = opencvToTk(data.frame)
     canvas.create_image(data.width/2, data.height/2, image=data.tk_image)
 
