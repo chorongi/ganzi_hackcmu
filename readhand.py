@@ -83,7 +83,7 @@ def detectHand(data):
     eroded = cv2.erode(segment_thresh, kernel, iterations=2)
     dilated = cv2.dilate(eroded, kernel, iterations=2)
     binary = cv2.morphologyEx(dilated, cv2.MORPH_CLOSE, kernel)
-    _,data.cnt,_ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    data.cnt,_ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
     for (i, c) in enumerate(data.cnt):
             area = cv2.contourArea(c)
@@ -104,10 +104,8 @@ def detectHand(data):
 
 def detectFace(data, block=False, colour=(0, 0, 0)):
     fill = [1, -1][block]
-    face_cascade = cv2.CascadeClassifier(
-        cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    gray = cv2.cvtColor(data.frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.1, 5)
     area = 0
     X = Y = W = H = 0
@@ -121,7 +119,7 @@ def drawCamera(canvas, data):
     _, data.frame = data.camera.read()
     data.frame = cv2.flip(data.frame,1)
     detectHand(data)
-    detectFace(data, block=True)
+    #detectFace(data, block=True)
     data.tk_image = opencvToTk(data.frame)
     canvas.create_image(data.width/2, data.height/2, image=data.tk_image)
 
