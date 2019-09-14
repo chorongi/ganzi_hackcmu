@@ -15,6 +15,7 @@ def get_action_num(old_cx, old_cy, new_cx, new_cy, width, height, num_fingers):
 	hori_tol = 150
 	vert_tol = 120
 	action = -1
+	area_threshold = 5000
 
 	if(num_fingers < 2):
 		action = (MOVE_FINGER, new_cx, new_cy)
@@ -53,6 +54,8 @@ def execute_action(action_num, center_x, center_y, prev_window):
 	MAXIMIZE = 5
 	MOVE = 6
 	RESTORE = 7
+	RESIZE = 8
+	MINIMIZE_ALL = 9
 
 	width = 650
 	height = 400
@@ -66,7 +69,6 @@ def execute_action(action_num, center_x, center_y, prev_window):
 	target_window = curr_window
 	if(len(target_list) != 0):
 		target_window = target_list[0]
-
 	if(action_num == SHUT_DOWN):
 		os.system("shutdown /p")
 	elif(action_num == LOCK):
@@ -84,8 +86,16 @@ def execute_action(action_num, center_x, center_y, prev_window):
 		curr_window.moveTo(center_x, center_y)
 	elif(action_num == RESTORE):
 		prev_window.restore()
+	elif(action_num == RESIZE):
+		ratio = center_x / width
+		new_w = round(screen_width * ratio)
+		new_h = round(screen_height * ratio)
+		curr_window.resizeTo(new_w, new_h)
+	elif(action_num ==  MINIMIZE_ALL):
+		for window in winndow_list:
+			window.minimize()
 	else:
 		pass
-	prev_window = pgw.getActiveWindow()
+	prev_window = curr_window
 	return prev_window
 

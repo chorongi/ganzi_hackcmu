@@ -18,6 +18,8 @@ sys.setrecursionlimit(10000)
 ####################################
 
 
+
+
 def init(data):
     
     data.binary = None
@@ -28,15 +30,15 @@ def init(data):
     data.com = (0,0)
     data.prev_window = pgw.getActiveWindow()
     data.count = 0
-    data.action_count = 0
     data.old_com = (0,0)
 
     data.palmAreaCpy = 0
     data.yLimit = 0
     data.numFinger = 0
 
-    data.demo_seconds = [10, 15, 20, 25, 30, 35, 40, 45]
-    data.action_list = [5, 8, 4, 7, 6, 2, 9, 1]
+
+
+    
     
 def mouseMotion(event, data):
     data.cursorX, data.cursorY = event.x, event.y
@@ -170,7 +172,6 @@ def detectFingertips(data, filter_value=50):
         if(y<data.yLimit):
             numFinger += 1
             data.numFinger = numFinger
-    print(numFinger)
             
         
 def countFinger(canvas,data):
@@ -219,7 +220,9 @@ def run(width=500, height=500):
         timerFired(data)
         redrawAllWrapper(canvas, data)
         data.count += 1
-        if(data.count % 20 == 0):
+        if(data.count == data.demo_seconds[data.action_count]*50):
+            print(data.demo_seconds[data.action_count])
+            action = []
             (new_cx, new_cy) = data.com
             (old_cx, old_cy) = data.old_com
             num_fingers = 2
@@ -245,8 +248,11 @@ def run(width=500, height=500):
     data.cameraIndex = 0
     camera = cv2.VideoCapture(data.cameraIndex)
     data.camera = camera
+    data.demo_seconds = [10, 15, 20, 25, 30, 35, 40, 45]
+    data.action_list = [5, 8, 4, 7, 6, 2, 9, 1]
+    data.action_count = 0
 
-    data.timerDelay = 10 # milliseconds
+    data.timerDelay = 1 # milliseconds
     _, data.frame = data.camera.read()
     data.frame = cv2.flip(data.frame,1)
     init(data)
