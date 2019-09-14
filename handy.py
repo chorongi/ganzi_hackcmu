@@ -56,7 +56,7 @@ def dist(a, b):
 
 def captureHistogram(source = None):
     source = 0 if source is None else source
-    if source is not None and str(type(source)) != "<type 'int'>":
+    if source is not None and str(type(source)) != "<class 'int'>":
         raise ValueError("source: integer value expected")
     cap = cv2.VideoCapture(source)
     while True:
