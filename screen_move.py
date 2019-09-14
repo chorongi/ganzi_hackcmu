@@ -4,8 +4,6 @@ import os
 
 
 
-width = 400
-height = 650
 
 
 def get_action_num(old_cx, old_cy, new_cx, new_cy, width, height, num_fingers):
@@ -56,11 +54,18 @@ def execute_action(action_num, center_x, center_y, prev_window):
 	MOVE = 6
 	RESTORE = 7
 
+	width = 650
+	height = 400
+
+	screen_width = 1920
+	screen_height = 1080
 
 	window_list = pgw.getAllWindows()
 	curr_window = pgw.getActiveWindow()
-	target_window = pgw.getWindowsAt(center_x, center_y)[0]
-
+	target_list = pgw.getWindowsAt(round(center_x/width*screen_width), round(center_y/height * screen_height))
+	target_window = curr_window
+	if(len(target_list) != 0):
+		target_window = target_list[0]
 
 	if(action_num == SHUT_DOWN):
 		os.system("shutdown /p")
@@ -72,7 +77,9 @@ def execute_action(action_num, center_x, center_y, prev_window):
 	elif(action_num == ACTIVATE):
 		target_window.activate()
 	elif(action_num == MINIMIZE):
-		curr_window.activate()
+		curr_window.minimize()
+	elif(action_num == MAXIMIZE):
+		curr_window.maximize()
 	elif(action_num == MOVE):
 		curr_window.moveTo(center_x, center_y)
 	elif(action_num == RESTORE):

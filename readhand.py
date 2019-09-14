@@ -8,6 +8,10 @@ import time
 import math
 import collections
 import coloredlogs, logging
+import pygetwindow as pgw
+from screen_move import execute_action
+from screen_move import get_action_num
+
 sys.setrecursionlimit(10000)
 ####################################
 # customize these functions
@@ -20,7 +24,10 @@ def init(data):
     data.box = None
     data.object_color = data.frame[105:175, 505:575]
     data.cnt = None
-    data.com = 0
+    data.com = (0,0)
+    data.prev_window = pgw.getActiveWindow()
+    data.count = 0
+    data.old_com = (0,0)
     
 def mouseMotion(event, data):
     data.cursorX, data.cursorY = event.x, event.y
@@ -149,6 +156,15 @@ def run(width=500, height=500):
     def timerFiredWrapper(canvas, data):
         timerFired(data)
         redrawAllWrapper(canvas, data)
+        data.count += 1
+        if(data.count % 20 == 0):
+            (new_cx, new_cy) = data.com
+            (old_cx, old_cy) = data.old_com
+            num_fingers = 2
+            action = get_action_num(old_cx, old_cy, new_cx, new_cy, data.width,data.height, num_fingers)
+            print(action)
+            # data.prev_window = execute_action(action, cx, cy, data.prev_window)
+            data.old_com = (new_cx, new_cy)
         # pause, then call timerFired again
         canvas.after(data.timerDelay, timerFiredWrapper, canvas, data)
         
@@ -156,7 +172,7 @@ def run(width=500, height=500):
         #if data.useMotion == True:
         mouseMotion(event, data)
         #redrawAllWrapper(canvas, data)
-        
+
     # Set up data and call init
     class Struct(object): pass
     data = Struct()
@@ -165,7 +181,8 @@ def run(width=500, height=500):
     data.cameraIndex = 0
     camera = cv2.VideoCapture(data.cameraIndex)
     data.camera = camera
-    data.timerDelay = 1 # milliseconds
+
+    data.timerDelay = 10 # milliseconds
     _, data.frame = data.camera.read()
     data.frame = cv2.flip(data.frame,1)
     init(data)
