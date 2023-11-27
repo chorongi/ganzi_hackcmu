@@ -1,4 +1,5 @@
 # asset/output directories
+datasets/*
 
 # network file system
 .nfs*
