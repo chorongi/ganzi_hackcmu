@@ -1,2 +1,2 @@
-# ganzi_hackcmu
-hack cmu code for motion recognition screen control
+# hand-ganzi
+hack cmu code for hand motion recognition screen control
